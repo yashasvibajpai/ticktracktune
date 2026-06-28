@@ -1,17 +1,21 @@
 import React from 'react';
-import type { Task, Session, SessionType } from './types';
+import type { Task, Session, SessionType, TaskListGroup } from './types';
 import Timer from './components/Timer';
 import TaskList from './components/TaskList';
 import Reports from './components/Reports';
 import MusicPlayer from './components/MusicPlayer';
 import { v4 as uuidv4 } from 'uuid';
+import { useLocalStorage } from './hooks/useLocalStorage';
 
 function App() {
-  const [tasks, setTasks] = React.useState<Task[]>([]);
-  const [sessions, setSessions] = React.useState<Session[]>([]);
-  const [activeTaskId, setActiveTaskId] = React.useState<string | undefined>();
+  const [tasks, setTasks] = useLocalStorage<Task[]>('pomodoro_tasks', []);
+  const [sessions, setSessions] = useLocalStorage<Session[]>('pomodoro_sessions', []);
+  const [lists, setLists] = useLocalStorage<TaskListGroup[]>('pomodoro_lists', [{ id: 'default', name: 'Default List' }]);
+  const [activeTaskId, setActiveTaskId] = useLocalStorage<string | undefined>('pomodoro_active_task', undefined);
   const [mode, setMode] = React.useState<SessionType>('work');
   const [tab, setTab] = React.useState<'timer' | 'reports'>('timer');
+
+  const [activeListId, setActiveListId] = React.useState<string>('default');
 
   const handleTaskAdd = (title: string, estimatedTime?: number) => {
     const newTask: Task = {
@@ -21,8 +25,18 @@ function App() {
       totalTimeSpent: 0,
       estimatedTime,
       createdAt: Date.now(),
+      listId: activeListId,
     };
     setTasks([...tasks, newTask]);
+  };
+
+  const handleListAdd = (name: string) => {
+    const newList: TaskListGroup = {
+      id: uuidv4(),
+      name,
+    };
+    setLists([...lists, newList]);
+    setActiveListId(newList.id);
   };
 
   const handleTaskToggle = (id: string) => {
@@ -36,13 +50,19 @@ function App() {
 
   const handleSessionComplete = (session: Session) => {
     setSessions([...sessions, session]);
-    if (session.taskId && session.type === 'work') {
-      setTasks(tasks.map(t =>
-        t.id === session.taskId
-          ? { ...t, totalTimeSpent: t.totalTimeSpent + session.duration }
-          : t
-      ));
-    }
+    // Task time is now updated in real-time via handleTaskTick
+  };
+
+  const handleTaskTick = (taskId: string, elapsedSeconds: number) => {
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (t.id === taskId) {
+        const newTimeSpent = t.totalTimeSpent + elapsedSeconds;
+        // Auto complete if we have an estimate and we reached it
+        const isCompleted = t.estimatedTime ? newTimeSpent >= t.estimatedTime : t.completed;
+        return { ...t, totalTimeSpent: newTimeSpent, completed: isCompleted };
+      }
+      return t;
+    }));
   };
 
   return (
@@ -74,6 +94,7 @@ function App() {
                 setMode={setMode}
                 activeTaskId={activeTaskId}
                 onSessionComplete={handleSessionComplete}
+                onTaskTick={handleTaskTick}
               />
             </div>
 
@@ -83,8 +104,12 @@ function App() {
 
             <div className="bg-white/50 p-6 rounded-xl shadow-lg backdrop-blur-sm border border-wood-400">
               <TaskList
-                tasks={tasks}
+                tasks={tasks.filter(t => (t.listId || 'default') === activeListId)}
                 activeTaskId={activeTaskId}
+                lists={lists}
+                activeListId={activeListId}
+                onListSelect={setActiveListId}
+                onListAdd={handleListAdd}
                 onTaskAdd={handleTaskAdd}
                 onTaskToggle={handleTaskToggle}
                 onTaskDelete={handleTaskDelete}

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import type { Task } from '../types';
-import { CheckCircle2, Circle, Trash2, Plus, PlayCircle } from 'lucide-react';
+import type { Task, TaskListGroup } from '../types';
+import { CheckCircle2, Circle, Trash2, Plus, PlayCircle, FolderPlus } from 'lucide-react';
 
 interface TaskListProps {
   tasks: Task[];
   activeTaskId?: string;
+  lists: TaskListGroup[];
+  activeListId: string;
+  onListSelect: (id: string) => void;
+  onListAdd: (name: string) => void;
   onTaskAdd: (title: string, estimatedTime?: number) => void;
   onTaskToggle: (id: string) => void;
   onTaskDelete: (id: string) => void;
@@ -14,6 +18,10 @@ interface TaskListProps {
 export default function TaskList({
   tasks,
   activeTaskId,
+  lists,
+  activeListId,
+  onListSelect,
+  onListAdd,
   onTaskAdd,
   onTaskToggle,
   onTaskDelete,
@@ -21,6 +29,8 @@ export default function TaskList({
 }: TaskListProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskEst, setNewTaskEst] = useState('');
+  const [isAddingList, setIsAddingList] = useState(false);
+  const [newListName, setNewListName] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +38,15 @@ export default function TaskList({
       onTaskAdd(newTaskTitle.trim(), newTaskEst ? parseInt(newTaskEst) * 60 : undefined);
       setNewTaskTitle('');
       setNewTaskEst('');
+    }
+  };
+
+  const handleListSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newListName.trim()) {
+      onListAdd(newListName.trim());
+      setNewListName('');
+      setIsAddingList(false);
     }
   };
 
@@ -40,7 +59,45 @@ export default function TaskList({
 
   return (
     <div className="w-full">
-      <h2 className="text-xl font-bold text-wood-900 mb-4 border-b border-wood-400 pb-2">Tasks</h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 border-b border-wood-400 pb-2 gap-2">
+        <h2 className="text-xl font-bold text-wood-900">Tasks</h2>
+        <div className="flex items-center gap-2 overflow-x-auto">
+           {lists.map(list => (
+             <button
+               key={list.id}
+               onClick={() => onListSelect(list.id)}
+               className={`px-3 py-1 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+                 activeListId === list.id
+                   ? 'bg-wood-800 text-wood-100'
+                   : 'bg-white/50 text-wood-900 hover:bg-wood-400'
+               }`}
+             >
+               {list.name}
+             </button>
+           ))}
+           {!isAddingList ? (
+             <button
+               onClick={() => setIsAddingList(true)}
+               className="p-1.5 text-wood-600 hover:text-wood-900 bg-white/50 hover:bg-wood-400 rounded-md transition-colors"
+               title="New List"
+             >
+               <FolderPlus size={18} />
+             </button>
+           ) : (
+             <form onSubmit={handleListSubmit} className="flex items-center gap-1">
+               <input
+                 type="text"
+                 autoFocus
+                 value={newListName}
+                 onChange={(e) => setNewListName(e.target.value)}
+                 onBlur={() => setIsAddingList(false)}
+                 placeholder="List name..."
+                 className="px-2 py-1 text-sm bg-white/70 border border-wood-400 rounded-md focus:outline-none focus:ring-2 focus:ring-wood-600 w-32"
+               />
+             </form>
+           )}
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
         <input
