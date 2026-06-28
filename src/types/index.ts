@@ -5,12 +5,6 @@ export interface Task {
   totalTimeSpent: number; // in seconds
   estimatedTime?: number; // in seconds
   createdAt: number;
-  listId?: string;
-}
-
-export interface TaskListGroup {
-  id: string;
-  name: string;
 }
 
 export type SessionType = 'work' | 'shortBreak' | 'longBreak';

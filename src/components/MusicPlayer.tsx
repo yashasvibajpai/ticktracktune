@@ -104,7 +104,6 @@ export default function MusicPlayer({ mode }: MusicPlayerProps) {
               fs: 0,
               modestbranding: 1,
               playsinline: 1,
-              origin: window.location.origin,
             },
           }}
           onReady={onPlayerReady}
