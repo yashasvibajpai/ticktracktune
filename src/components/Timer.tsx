@@ -8,6 +8,7 @@ interface TimerProps {
   setMode: (mode: SessionType) => void;
   activeTaskId?: string;
   onSessionComplete: (session: Session) => void;
+  onTaskTick?: (taskId: string, elapsedSeconds: number) => void;
 }
 
 const DEFAULT_TIMES = {
@@ -16,7 +17,7 @@ const DEFAULT_TIMES = {
   longBreak: 15 * 60,
 };
 
-export default function Timer({ mode, setMode, activeTaskId, onSessionComplete }: TimerProps) {
+export default function Timer({ mode, setMode, activeTaskId, onSessionComplete, onTaskTick }: TimerProps) {
   const [timeLeft, setTimeLeft] = useState(DEFAULT_TIMES[mode]);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
@@ -38,6 +39,9 @@ export default function Timer({ mode, setMode, activeTaskId, onSessionComplete }
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
+        if (mode === 'work' && activeTaskId && onTaskTick) {
+          onTaskTick(activeTaskId, 1);
+        }
       }, 1000);
     } else if (isRunning && timeLeft === 0) {
       handleComplete();
@@ -46,7 +50,7 @@ export default function Timer({ mode, setMode, activeTaskId, onSessionComplete }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRunning, timeLeft]);
+  }, [isRunning, timeLeft, mode, activeTaskId, onTaskTick]);
 
   const handleStart = () => {
     if (!isRunning && timeLeft > 0) {
