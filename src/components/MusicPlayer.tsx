@@ -104,7 +104,7 @@ export default function MusicPlayer({ mode }: MusicPlayerProps) {
               fs: 0,
               modestbranding: 1,
               playsinline: 1,
-              origin: window.location.origin,
+              origin: typeof window !== 'undefined' ? window.location.origin : 'https://ticktracktune.netlify.app',
             },
           }}
           onReady={onPlayerReady}
